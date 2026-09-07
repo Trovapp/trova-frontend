@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { KakaoMap, type MapPin } from "@/components/KakaoMap";
+import { FolderPickerModal } from "@/components/FolderPickerModal";
 import { getDayColor } from "@/lib/itinerary";
 import { addBookmark, listBookmarks, type Bookmark } from "@/lib/api/bookmarks";
 import { getPlaceDetails, searchPlaces, type PlaceDetail, type RecommendedPlace } from "@/lib/api/recommendations";
@@ -46,6 +47,7 @@ export function TripDetailView({ trip: initialTrip }: { trip: TripDetail }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [weatherMessage, setWeatherMessage] = useState<string | null>(null);
+  const [folderPickerPlaceId, setFolderPickerPlaceId] = useState<number | null>(null);
 
   useEffect(() => {
     listBookmarks()
@@ -140,8 +142,15 @@ export function TripDetailView({ trip: initialTrip }: { trip: TripDetail }) {
 
   async function handleToggleBookmark(placeId: number) {
     if (bookmarkedPlaceIds.has(placeId)) return;
+    setFolderPickerPlaceId(placeId);
+  }
+
+  async function handlePickFolder(folderId: number | null) {
+    if (folderPickerPlaceId === null) return;
+    const placeId = folderPickerPlaceId;
+    setFolderPickerPlaceId(null);
     try {
-      const created = await addBookmark(placeId);
+      const created = await addBookmark(placeId, folderId);
       setBookmarkedPlaceIds((current) => new Set(current).add(placeId));
       setBookmarks((current) => [created, ...current]);
     } catch {
@@ -579,6 +588,12 @@ export function TripDetailView({ trip: initialTrip }: { trip: TripDetail }) {
           </ul>
         )}
       </div>
+
+      <FolderPickerModal
+        visible={folderPickerPlaceId !== null}
+        onClose={() => setFolderPickerPlaceId(null)}
+        onPick={handlePickFolder}
+      />
     </div>
   );
 }

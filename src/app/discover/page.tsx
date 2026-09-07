@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { KakaoMap } from "@/components/KakaoMap";
 import { RecommendedPlaceCard } from "@/components/RecommendedPlaceCard";
 import { LoadingProgress } from "@/components/LoadingProgress";
+import { FolderPickerModal } from "@/components/FolderPickerModal";
 import { recommend, searchPlaces, type RecommendedPlace } from "@/lib/api/recommendations";
 import { addBookmark, listBookmarks, removeBookmark } from "@/lib/api/bookmarks";
 
@@ -24,6 +25,7 @@ export default function DiscoverPage() {
   // placeId -> bookmarkId. 값이 있으면 찜한 상태, Map에 키가 없으면 찜 안 한 상태.
   const [bookmarksByPlaceId, setBookmarksByPlaceId] = useState<Map<number, number>>(new Map());
   const [pendingPlaceId, setPendingPlaceId] = useState<number | null>(null);
+  const [folderPickerPlaceId, setFolderPickerPlaceId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -78,20 +80,34 @@ export default function DiscoverPage() {
 
   async function handleToggleBookmark(place: RecommendedPlace) {
     if (pendingPlaceId !== null) return;
-    setPendingPlaceId(place.id);
     const existingBookmarkId = bookmarksByPlaceId.get(place.id);
-    try {
-      if (existingBookmarkId !== undefined) {
+    if (existingBookmarkId !== undefined) {
+      setPendingPlaceId(place.id);
+      try {
         await removeBookmark(existingBookmarkId);
         setBookmarksByPlaceId((current) => {
           const next = new Map(current);
           next.delete(place.id);
           return next;
         });
-      } else {
-        const created = await addBookmark(place.id);
-        setBookmarksByPlaceId((current) => new Map(current).set(place.id, created.id));
+      } catch {
+        setError("찜하기에 실패했어요. 다시 시도해주세요.");
+      } finally {
+        setPendingPlaceId(null);
       }
+      return;
+    }
+    setFolderPickerPlaceId(place.id);
+  }
+
+  async function handlePickFolder(folderId: number | null) {
+    if (folderPickerPlaceId === null) return;
+    const placeId = folderPickerPlaceId;
+    setFolderPickerPlaceId(null);
+    setPendingPlaceId(placeId);
+    try {
+      const created = await addBookmark(placeId, folderId);
+      setBookmarksByPlaceId((current) => new Map(current).set(placeId, created.id));
     } catch {
       setError("찜하기에 실패했어요. 다시 시도해주세요.");
     } finally {
@@ -172,6 +188,12 @@ export default function DiscoverPage() {
           )}
         </div>
       )}
+
+      <FolderPickerModal
+        visible={folderPickerPlaceId !== null}
+        onClose={() => setFolderPickerPlaceId(null)}
+        onPick={handlePickFolder}
+      />
     </main>
   );
 }

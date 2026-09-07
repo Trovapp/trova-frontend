@@ -27,10 +27,13 @@ export default function BookmarksPage() {
 
   useEffect(() => {
     if (authLoading || !user) return;
-    Promise.all([listBookmarks(), listFolders()])
+    Promise.all([listBookmarks(), listFolders().catch(() => [])])
       .then(([b, f]) => {
         setBookmarks(b);
         setFolders(f);
+      })
+      .catch(() => {
+        setBookmarks([]);
       })
       .finally(() => setDataLoading(false));
   }, [authLoading, user]);
@@ -50,7 +53,8 @@ export default function BookmarksPage() {
   }
 
   const loading = authLoading || (!!user && dataLoading);
-  const unsortedCount = bookmarks.filter((b) => b.folderId === null).length;
+  const countFor = (id: number | null) => bookmarks.filter((b) => b.folderId === id).length;
+  const unsortedCount = countFor(null);
   const visibleBookmarks =
     activeFolderId === 0
       ? bookmarks
@@ -97,7 +101,7 @@ export default function BookmarksPage() {
                   className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs ${activeFolderId === folder.id ? "bg-accent text-white" : "bg-bg-muted text-ink-muted"}`}
                 >
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: folder.color }} />
-                  {folder.name} ({folder.placeCount})
+                  {folder.name} ({countFor(folder.id)})
                 </button>
               ))}
               <button

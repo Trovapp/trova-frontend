@@ -18,20 +18,29 @@ export function FolderPickerModal({
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState<string>(DAY_COLORS[0]);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!visible) return;
-    listFolders().then(setFolders);
+    listFolders()
+      .then((f) => {
+        setFolders(f);
+        setError(null);
+      })
+      .catch(() => setError("폴더를 불러오지 못했어요."));
   }, [visible]);
 
   async function handleCreateAndPick() {
     if (!newName.trim() || busy) return;
     setBusy(true);
+    setError(null);
     try {
       const folder = await createFolder(newName.trim(), newColor);
       setCreating(false);
       setNewName("");
       onPick(folder.id);
+    } catch {
+      setError("폴더를 만들지 못했어요.");
     } finally {
       setBusy(false);
     }
@@ -46,6 +55,8 @@ export function FolderPickerModal({
         onClick={(e) => e.stopPropagation()}
       >
         <p className="mb-3 font-medium text-ink">어느 폴더에 저장할까요?</p>
+
+        {error && <p className="mb-3 text-sm text-accent">{error}</p>}
 
         <div className="flex flex-col gap-2">
           <button

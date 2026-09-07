@@ -289,16 +289,14 @@ export function TripDetailView({ trip: initialTrip }: { trip: TripDetail }) {
 
             <div className="flex flex-wrap items-center gap-3 text-xs text-ink-muted">
               {editingField?.placeId === place.id && editingField.field === "time" ? (
+                // 도착 시간 하나만 받는다 — 종료 시간은 이 화면 어디에도 쓰이지 않아서
+                // (캘린더형 블록 뷰가 아니라 리스트) 입력만 시키고 버려지는 값이었다.
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
                     const form = e.currentTarget;
                     const start = (form.elements.namedItem("start") as HTMLInputElement).value;
-                    const end = (form.elements.namedItem("end") as HTMLInputElement).value;
-                    handleUpdateDetails(place.id, {
-                      visitStartTime: start || undefined,
-                      visitEndTime: end || undefined,
-                    });
+                    handleUpdateDetails(place.id, { visitStartTime: start || undefined });
                   }}
                   className="flex items-center gap-1"
                 >
@@ -306,13 +304,6 @@ export function TripDetailView({ trip: initialTrip }: { trip: TripDetail }) {
                     name="start"
                     type="time"
                     defaultValue={place.visitStartTime?.slice(0, 5) ?? ""}
-                    className="rounded border border-border px-1 py-0.5 text-xs"
-                  />
-                  <span>~</span>
-                  <input
-                    name="end"
-                    type="time"
-                    defaultValue={place.visitEndTime?.slice(0, 5) ?? ""}
                     className="rounded border border-border px-1 py-0.5 text-xs"
                   />
                   <button type="submit" className="text-accent">저장</button>
@@ -323,9 +314,7 @@ export function TripDetailView({ trip: initialTrip }: { trip: TripDetail }) {
                   onClick={() => setEditingField({ placeId: place.id, field: "time" })}
                   className="hover:text-ink"
                 >
-                  {place.visitStartTime && place.visitEndTime
-                    ? `${place.visitStartTime.slice(0, 5)}~${place.visitEndTime.slice(0, 5)}`
-                    : "시간 추가"}
+                  {place.visitStartTime ? `${place.visitStartTime.slice(0, 5)} 도착` : "시간 추가"}
                 </button>
               )}
 
@@ -445,7 +434,7 @@ export function TripDetailView({ trip: initialTrip }: { trip: TripDetail }) {
                         aria-label={bookmarkedPlaceIds.has(place.id) ? "찜한 장소" : "찜하기"}
                         className="text-lg leading-none"
                       >
-                        {bookmarkedPlaceIds.has(place.id) ? "❤️" : "🤍"}
+                        {bookmarkedPlaceIds.has(place.id) ? "⭐" : "☆"}
                       </button>
                       <button
                         type="button"

@@ -89,7 +89,7 @@ export function RecommendedPlaceCard({
           aria-pressed={bookmarked}
           className="shrink-0 text-xl leading-none disabled:opacity-40"
         >
-          {bookmarked ? "❤️" : "🤍"}
+          {bookmarked ? "⭐" : "☆"}
         </button>
       </div>
 

@@ -18,29 +18,41 @@ function toCategoryLabel(category: string | null): string {
 
 type PlaceResponse = {
   id: number;
+  jobId: number;
   placeName: string;
   region: string | null;
   category: string | null;
   latitude: number | null;
   longitude: number | null;
   sourceUrl: string;
+  title: string | null;
   sourcePlatform: "INSTAGRAM" | "YOUTUBE";
   createdAt: string;
+  dayNumber: number | null;
+  orderInDay: number | null;
+  phone: string | null;
+  address: string | null;
+  roadAddress: string | null;
+  kakaoCategoryName: string | null;
+  kakaoPlaceUrl: string | null;
 };
 
-type PendingJobResponse = {
+export type PendingJobResponse = {
   jobId: number;
   sourceUrl: string;
+  title: string | null;
   sourcePlatform: "INSTAGRAM" | "YOUTUBE";
-  status: "PENDING" | "PROCESSING";
+  status: "PENDING" | "PROCESSING" | "FAILED";
   createdAt: string;
 };
 
 function fromPlaceResponse(place: PlaceResponse): SavedPlace {
   return {
     id: String(place.id),
+    jobId: place.jobId,
     sourceUrl: place.sourceUrl,
     sourcePlatform: place.sourcePlatform,
+    title: place.title,
     placeName: place.placeName,
     region: place.region ?? "",
     category: toCategoryLabel(place.category),
@@ -48,14 +60,23 @@ function fromPlaceResponse(place: PlaceResponse): SavedPlace {
     longitude: place.longitude ?? 0,
     status: "DONE",
     createdAt: place.createdAt,
+    dayNumber: place.dayNumber,
+    orderInDay: place.orderInDay,
+    phone: place.phone,
+    address: place.address,
+    roadAddress: place.roadAddress,
+    kakaoCategoryName: place.kakaoCategoryName,
+    kakaoPlaceUrl: place.kakaoPlaceUrl,
   };
 }
 
 function fromPendingJobResponse(job: PendingJobResponse): SavedPlace {
   return {
     id: String(job.jobId),
+    jobId: job.jobId,
     sourceUrl: job.sourceUrl,
     sourcePlatform: job.sourcePlatform,
+    title: job.title,
     placeName: "",
     region: "",
     category: "",
@@ -63,10 +84,17 @@ function fromPendingJobResponse(job: PendingJobResponse): SavedPlace {
     longitude: 0,
     status: job.status,
     createdAt: job.createdAt,
+    dayNumber: null,
+    orderInDay: null,
+    phone: null,
+    address: null,
+    roadAddress: null,
+    kakaoCategoryName: null,
+    kakaoPlaceUrl: null,
   };
 }
 
-export async function createShare(url: string): Promise<void> {
+export async function createShare(url: string): Promise<{ jobId: number }> {
   const res = await fetch(`${API_BASE_URL}/api/shares`, {
     method: "POST",
     credentials: "include",
@@ -84,25 +112,34 @@ export async function createShare(url: string): Promise<void> {
   if (!res.ok) {
     throw new Error(`POST /api/shares failed: ${res.status}`);
   }
+  return res.json();
+}
+
+export async function getPendingJobs(): Promise<PendingJobResponse[]> {
+  const res = await fetch(`${API_BASE_URL}/api/places/pending`, { credentials: "include" });
+  if (!res.ok) {
+    throw new Error(`GET /api/places/pending failed: ${res.status}`);
+  }
+  return res.json();
 }
 
 export async function getPlaces(): Promise<SavedPlace[]> {
-  const [placesRes, pendingRes] = await Promise.all([
+  const [placesRes, pending] = await Promise.all([
     fetch(`${API_BASE_URL}/api/places`, { credentials: "include" }),
-    fetch(`${API_BASE_URL}/api/places/pending`, { credentials: "include" }),
+    getPendingJobs(),
   ]);
 
   if (!placesRes.ok) {
     throw new Error(`GET /api/places failed: ${placesRes.status}`);
   }
-  if (!pendingRes.ok) {
-    throw new Error(`GET /api/places/pending failed: ${pendingRes.status}`);
-  }
-
   const places: PlaceResponse[] = await placesRes.json();
-  const pending: PendingJobResponse[] = await pendingRes.json();
 
-  return [...pending.map(fromPendingJobResponse), ...places.map(fromPlaceResponse)].sort(
+  // 이미 완료된 영상(DONE 장소가 있는 sourceUrl)의 job이 재처리(예: 일정 생성 트리거)로
+  // 다시 PENDING/PROCESSING/FAILED에 나타나면, 완료된 장소 목록과 중복 표시되는 걸 막는다.
+  const doneSourceUrls = new Set(places.map((place) => place.sourceUrl));
+  const activePending = pending.filter((job) => !doneSourceUrls.has(job.sourceUrl));
+
+  return [...activePending.map(fromPendingJobResponse), ...places.map(fromPlaceResponse)].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }
@@ -130,4 +167,59 @@ export async function deletePlace(id: string): Promise<void> {
   if (!res.ok) {
     throw new Error(`DELETE /api/places/${id} failed: ${res.status}`);
   }
+}
+
+export async function generateItinerary(jobId: number): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/places/videos/${jobId}/itinerary`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new Error(`POST /api/places/videos/${jobId}/itinerary failed: ${res.status}`);
+  }
+}
+
+export async function moveToDay(placeId: string, dayNumber: number): Promise<SavedPlace> {
+  const res = await fetch(`${API_BASE_URL}/api/places/${placeId}/day`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ dayNumber }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`PATCH /api/places/${placeId}/day failed: ${res.status}`);
+  }
+  return fromPlaceResponse(await res.json());
+}
+
+export async function reorderPlace(
+  placeId: string,
+  direction: "UP" | "DOWN"
+): Promise<SavedPlace> {
+  const res = await fetch(`${API_BASE_URL}/api/places/${placeId}/order`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ direction }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`PATCH /api/places/${placeId}/order failed: ${res.status}`);
+  }
+  return fromPlaceResponse(await res.json());
+}
+
+export async function optimizeRoute(jobId: number, day: number): Promise<SavedPlace[]> {
+  const res = await fetch(`${API_BASE_URL}/api/places/videos/${jobId}/days/${day}/optimize-route`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new Error(`POST /api/places/videos/${jobId}/days/${day}/optimize-route failed: ${res.status}`);
+  }
+  const places: PlaceResponse[] = await res.json();
+  return places.map(fromPlaceResponse);
 }

@@ -17,8 +17,8 @@ export function UrlInputForm() {
     setSubmitting(true);
     setError(null);
     try {
-      await createShare(url.trim());
-      router.push("/places");
+      const { jobId } = await createShare(url.trim());
+      router.push(`/processing/${jobId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "요청에 실패했어요.");
     } finally {

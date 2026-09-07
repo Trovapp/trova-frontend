@@ -29,7 +29,7 @@ export function groupByDay(places: SavedPlace[]): Map<number, SavedPlace[]> {
 }
 
 // 1일차는 앱 포인트 색을 그대로 쓰고, 이후 날짜는 구분되는 색을 순서대로 배정한다.
-const DAY_COLORS = ["#FF6B4A", "#4A90D9", "#4AC98F", "#D9A94A", "#9B6BD9", "#D94A8C"];
+export const DAY_COLORS = ["#FF6B4A", "#4A90D9", "#4AC98F", "#D9A94A", "#9B6BD9", "#D94A8C"];
 
 export function getDayColor(dayNumber: number): string {
   return DAY_COLORS[(dayNumber - 1) % DAY_COLORS.length];

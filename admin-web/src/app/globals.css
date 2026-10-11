@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/* 색은 역할(토큰)로만 쓴다. 차트 색은 dataviz 기본 팔레트(검증: 라이트·다크 모두 색약 기준 통과). */
+:root {
+  color-scheme: light;
+  --surface: #fcfcfb;
+  --surface-raised: #ffffff;
+  --border: #e4e3df;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #7a7974;
+  --grid: #ecebe7;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --critical: #d03b3b;
+  --critical-bg: #fdecec;
+  --good: #0ca30c;
+  --accent: #2a78d6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --surface: #1a1a19;
+    --surface-raised: #232321;
+    --border: #383835;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8f8e88;
+    --grid: #2e2e2b;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --critical: #e66767;
+    --critical-bg: #3a1f1f;
+    --good: #0ca30c;
+    --accent: #3987e5;
+  }
+}
+
+html,
+body {
+  background: var(--surface);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+/* 휴대폰에서 가로로 넘기는 탭 줄의 스크롤바를 숨긴다(넘기기는 그대로). */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

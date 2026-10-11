@@ -1,6 +1,6 @@
 "use client";
 
-import { getPipeline, type Days } from "@/lib/api";
+import { getPipeline, type Days } from "@/lib/api/admin";
 import { formatNumber, formatSeconds, shortDate } from "@/lib/format";
 import { errorMessage, useAdminQuery } from "@/lib/useAdminQuery";
 import { DailyBars, RankBars } from "../Charts";
@@ -24,7 +24,7 @@ export function PipelineTab({ days, onUnauthorized }: { days: Days; onUnauthoriz
   if (state.status === "loading") return <LoadState message="분석 파이프라인을 불러오는 중…" />;
   if (state.status === "error") return <ErrorState message={errorMessage(state.error)} />;
 
-  const { daily, durationP50Seconds, durationP90Seconds, failureReasons, stuckJobs } = state.data;
+  const { daily, durationP50Seconds, durationP90Seconds, failureReasons, stuckJobs, drafts } = state.data;
   const rows = daily.map((d) => ({
     label: shortDate(d.date),
     done: d.done,
@@ -84,6 +84,24 @@ export function PipelineTab({ days, onUnauthorized }: { days: Days; onUnauthoriz
               STAGES[j.status] ?? j.status,
               j.stage ?? "–",
               `${j.minutesSinceUpdate}분`,
+            ])}
+          />
+        )}
+      </Panel>
+      <Panel
+        title="일정 초안"
+        subtitle={`${days}일 동안 만든 초안 ${formatNumber(drafts.total)}개 중 실패 ${formatNumber(drafts.failed)}개 · 멈춘 초안은 15분이 지나면 자동으로 실패 처리돼요.`}
+      >
+        {drafts.stuck.length === 0 ? (
+          <LoadState message="멈춘 초안이 없어요." />
+        ) : (
+          <DataTable
+            headers={["초안 번호", "상태", "만든 방법", "갱신 없음"]}
+            rows={drafts.stuck.map((d) => [
+              d.id,
+              STAGES[d.status] ?? d.status,
+              d.autoCreated ? "자동" : "직접",
+              `${d.minutesSinceUpdate}분`,
             ])}
           />
         )}

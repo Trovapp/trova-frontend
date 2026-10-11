@@ -19,15 +19,23 @@ npm run dev                  # http://localhost:3001
 ## 로그인 흐름
 
 1. 로그인 화면에서 구글·카카오 → 백엔드 `/oauth2/authorization/{provider}?client=admin-web`
-2. 관리자면 백엔드가 `/auth/callback/?code=<1회용, 60초>`로 돌려보냄(아니면 `?error=forbidden`)
+2. 관리자면 백엔드가 `/auth/callback/?code=<1회용, 60초>`로 돌려보냄(아니면 `?error=forbidden`). 교환 실패는 원인별(만료·권한·횟수 제한·연결)로 안내
 3. 콜백 화면이 `POST /api/auth/exchange`로 1시간 토큰을 받아 메모리 + sessionStorage에만 둔다(탭을 닫으면 다시 로그인)
 4. 관리자 API는 `Authorization: Bearer` 토큰만, 쿠키는 쓰지 않는다
+
+## 확인
+
+```bash
+npm run lint && npm test && npm run build
+```
+
+`npm test`는 의존성 없이 Node 내장 `node --test`로 CSP 생성(`scripts/csp.test.mjs`)과 토큰 만료 판단(`src/lib/session.test.ts`, Node 23.6+ 타입 제거 실행)을 검사한다.
 
 ## 빌드와 보안 헤더
 
 `npm run build` = `next build` + `scripts/csp-headers.mjs`. 뒤 스크립트가 `out/` HTML의 인라인 스크립트 해시를 계산해
 `out/_headers`(Cloudflare Pages 헤더 파일)를 만든다 — CSP `script-src 'self' <해시들>`(`'unsafe-inline'` 없이),
-`frame-ancestors 'none'`, `Referrer-Policy: no-referrer` 등. 빌드 때 `NEXT_PUBLIC_API_BASE_URL`이 CSP `connect-src`에도 들어간다.
+`frame-ancestors 'none'`, `Referrer-Policy: no-referrer` 등. 빌드 때 `NEXT_PUBLIC_API_BASE_URL`이 CSP `connect-src`에도 들어간다 — 없거나 `https`가 아니면(로컬 `localhost`만 예외) 빌드가 실패한다.
 
 ## Cloudflare Pages 배포
 

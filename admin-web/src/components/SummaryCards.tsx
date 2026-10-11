@@ -1,6 +1,6 @@
 "use client";
 
-import { getSummary, type SummaryCard } from "@/lib/api";
+import { getSummary, type SummaryCard } from "@/lib/api/admin";
 import { formatNumber } from "@/lib/format";
 import { errorMessage, useAdminQuery } from "@/lib/useAdminQuery";
 import { ErrorState } from "./Panel";
@@ -8,7 +8,7 @@ import { ErrorState } from "./Panel";
 const TITLES: Record<SummaryCard["key"], { title: string; unit: string }> = {
   geminiToday: { title: "오늘 Gemini 호출", unit: "회" },
   failures24h: { title: "24시간 분석 실패", unit: "건" },
-  stuckJobs: { title: "멈춘 작업", unit: "건" },
+  stuckJobs: { title: "멈춘 작업(분석·초안)", unit: "건" },
   p90LastHour: { title: "최근 1시간 응답 p90", unit: "ms" },
 };
 

@@ -1,4 +1,4 @@
-import { clearToken, getToken } from "./session";
+import { clearToken, getToken } from "../session";
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
@@ -32,6 +32,11 @@ export type PipelineDashboard = {
   durationP90Seconds: number | null;
   failureReasons: { reason: string; count: number }[];
   stuckJobs: { id: number; status: string; stage: string | null; minutesSinceUpdate: number }[];
+  drafts: {
+    total: number;
+    failed: number;
+    stuck: { id: number; status: string; autoCreated: boolean; minutesSinceUpdate: number }[];
+  };
 };
 
 export type AiDashboard = {

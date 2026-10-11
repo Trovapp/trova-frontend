@@ -2,8 +2,16 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { exchangeCode } from "@/lib/api";
+import { ApiError, exchangeCode } from "@/lib/api/admin";
 import { saveToken } from "@/lib/session";
+
+/** 교환 실패를 원인별로 나눈다 — 모두 "만료"로 안내하면 권한·횟수 제한·설정 문제를 알아챌 수 없다(웹 #5 리뷰). */
+function exchangeErrorCode(error: Error): string {
+  if (!(error instanceof ApiError)) return "network";
+  if (error.status === 403) return "forbidden";
+  if (error.status === 429) return "rate_limited";
+  return "exchange_failed";
+}
 
 /** 백엔드가 로그인 뒤 보내는 곳: ?code=(1회용, 60초) 또는 ?error=forbidden|oauth_failed. */
 export default function AuthCallbackPage() {
@@ -30,7 +38,7 @@ export default function AuthCallbackPage() {
         saveToken(token, expiresInSeconds);
         router.replace("/");
       })
-      .catch(() => router.replace("/login/?error=exchange_failed"));
+      .catch((e: Error) => router.replace(`/login/?error=${exchangeErrorCode(e)}`));
   }, [router]);
 
   return (

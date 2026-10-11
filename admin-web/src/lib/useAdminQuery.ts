@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ApiError } from "./api";
+import { ApiError } from "./api/admin";
 
 export type QueryState<T> =
   { status: "loading" } | { status: "error"; error: ApiError | Error } | { status: "ready"; data: T };

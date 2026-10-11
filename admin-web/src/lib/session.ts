@@ -7,10 +7,23 @@ type StoredToken = { token: string; expiresAt: number };
 
 let current: StoredToken | null = null;
 
-function readStorage(): StoredToken | null {
+/** 저장 값을 검사해 아직 유효한 토큰만 돌려준다. 만료 시각이 없거나 숫자가 아니면 만료로 본다(웹 #5 리뷰). */
+export function parseStoredToken(raw: string | null, now: number): StoredToken | null {
+  if (!raw) return null;
   try {
-    const raw = window.sessionStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as StoredToken) : null;
+    const value = JSON.parse(raw) as Partial<StoredToken>;
+    if (typeof value.token !== "string" || value.token === "" || typeof value.expiresAt !== "number") {
+      return null;
+    }
+    return value.expiresAt > now ? { token: value.token, expiresAt: value.expiresAt } : null;
+  } catch {
+    return null;
+  }
+}
+
+function readStorage(): string | null {
+  try {
+    return window.sessionStorage.getItem(STORAGE_KEY);
   } catch {
     return null;
   }
@@ -27,8 +40,9 @@ export function saveToken(token: string, expiresInSeconds: number): void {
 
 /** 만료됐거나 없으면 null. */
 export function getToken(): string | null {
-  const stored = current ?? readStorage();
-  if (!stored || stored.expiresAt <= Date.now()) {
+  const now = Date.now();
+  const stored = current && current.expiresAt > now ? current : parseStoredToken(readStorage(), now);
+  if (!stored) {
     clearToken();
     return null;
   }

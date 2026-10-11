@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { loginUrl, type Provider } from "@/lib/api";
+import { loginUrl, type Provider } from "@/lib/api/admin";
 
 const ERROR_MESSAGES: Record<string, string> = {
   forbidden: "관리자 계정이 아니에요. 관리자로 등록된 계정으로 로그인해 주세요.",
   oauth_failed: "로그인에 실패했어요. 다시 시도해 주세요.",
-  exchange_failed: "로그인 확인이 만료됐어요. 다시 로그인해 주세요.",
+  exchange_failed: "로그인 확인이 만료됐거나 이미 쓰였어요. 다시 로그인해 주세요.",
+  rate_limited: "로그인 시도가 너무 많아요. 1분 뒤 다시 시도해 주세요.",
+  network: "서버에 연결하지 못했어요. 네트워크나 관리자 웹 주소 설정(APP_ADMIN_WEB_URL)을 확인해 주세요.",
   expired: "로그인이 만료됐어요(1시간). 다시 로그인해 주세요.",
 };
 

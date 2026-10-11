@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Days } from "@/lib/api";
+import type { Days } from "@/lib/api/admin";
 import { clearToken, getToken } from "@/lib/session";
 import { SummaryCards } from "@/components/SummaryCards";
 import { AiTab } from "@/components/tabs/AiTab";

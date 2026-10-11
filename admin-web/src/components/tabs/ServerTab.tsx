@@ -1,6 +1,6 @@
 "use client";
 
-import { getServer, type Days } from "@/lib/api";
+import { getServer, type Days } from "@/lib/api/admin";
 import { formatNumber, shortDateTime } from "@/lib/format";
 import { errorMessage, useAdminQuery } from "@/lib/useAdminQuery";
 import { DailyBars, TimeLines } from "../Charts";

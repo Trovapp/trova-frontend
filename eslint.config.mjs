@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // 관리자 웹은 따로 빌드·린트한다(admin-web/, #5).
+    "admin-web/**",
   ]),
 ]);
 

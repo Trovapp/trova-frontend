@@ -37,9 +37,13 @@ npm run lint && npm test && npm run build
 `out/_headers`(Cloudflare Pages 헤더 파일)를 만든다 — CSP `script-src 'self' <해시들>`(`'unsafe-inline'` 없이),
 `frame-ancestors 'none'`, `Referrer-Policy: no-referrer` 등. 빌드 때 `NEXT_PUBLIC_API_BASE_URL`이 CSP `connect-src`에도 들어간다 — 없거나 `https`가 아니면(로컬 `localhost`만 예외) 빌드가 실패한다.
 
-## Cloudflare Pages 배포
+## Cloudflare 배포 (Workers 정적 사이트)
 
-- 프로젝트 루트 디렉터리: `admin-web`, 빌드 명령: `npm run build`, 출력: `out`
-- 환경 변수: `NEXT_PUBLIC_API_BASE_URL=https://<운영 백엔드>`
-- 앞에 Cloudflare Access(이메일 1회용 코드)를 둔다
-- 배포 뒤 백엔드 운영 설정 `APP_ADMIN_WEB_URL=https://<프로젝트>.pages.dev`
+2026-10-12: Cloudflare Pages가 Workers로 합쳐져 Workers 정적 사이트로 올린다. 주소 **https://admin.trovapp.workers.dev**(설정 `wrangler.jsonc`).
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=https://<운영 백엔드> npm run build && npx wrangler@4 deploy
+```
+
+- 배포 뒤 백엔드 운영 설정 `APP_ADMIN_WEB_URL=https://admin.trovapp.workers.dev`, `ADMIN_USERS=<로그인제공자:제공자사용자ID>`
+- 앞에 Cloudflare Access(이메일 1회용 코드)를 두는 것은 아직 안 함(관리자 데이터는 관리자 전용 토큰으로만 열린다)

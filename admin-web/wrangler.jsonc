@@ -1,0 +1,7 @@
+// 관리자 웹을 Cloudflare Workers 정적 사이트로 배포(Pages가 Workers로 합쳐짐, 2026-10-12). 주소 https://admin.trovapp.workers.dev
+// npm run build(out/ + out/_headers) 뒤 npx wrangler@4 deploy
+{
+  "name": "admin",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./out" }
+}

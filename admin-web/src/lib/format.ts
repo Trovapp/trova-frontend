@@ -25,3 +25,13 @@ export function formatSeconds(seconds: number | null): string {
   if (seconds < 60) return `${seconds}초`;
   return `${Math.floor(seconds / 60)}분 ${seconds % 60}초`;
 }
+
+/** 마감 시각(ms)까지 남은 초 — 올림해서 "0초 남음"은 정말 끝났을 때만. 지나면 0. */
+export function secondsLeft(deadline: number, now: number): number {
+  return Math.max(0, Math.ceil((deadline - now) / 1000));
+}
+
+/** 300 → "5:00", 65 → "1:05" */
+export function formatCountdown(seconds: number): string {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}

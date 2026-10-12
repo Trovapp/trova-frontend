@@ -10,6 +10,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   rate_limited: "로그인 시도가 너무 많아요. 1분 뒤 다시 시도해 주세요.",
   network: "서버에 연결하지 못했어요. 네트워크나 관리자 웹 주소 설정(APP_ADMIN_WEB_URL)을 확인해 주세요.",
   expired: "로그인이 만료됐어요(1시간). 다시 로그인해 주세요.",
+  reauth: "위험한 조치는 로그인 10분 안에만 할 수 있어요. 다시 로그인해 주세요.",
 };
 
 const PROVIDERS: { id: Provider; label: string }[] = [

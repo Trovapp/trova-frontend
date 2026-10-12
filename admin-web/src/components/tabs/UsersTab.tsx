@@ -4,6 +4,7 @@ import { useCallback, useState, type FormEvent } from "react";
 import { searchUsers, type ActionName } from "@/lib/api/admin";
 import { errorMessage, useAdminQuery, type AuthFailure } from "@/lib/useAdminQuery";
 import { ErrorState, LoadState } from "../Panel";
+import { ActionDialog } from "../users/ActionDialog";
 import { Badge, joinDate, providerLabel, UserDetail } from "../users/UserDetail";
 
 export type PendingAction = { action: ActionName; targetId: number; label: string };
@@ -32,7 +33,7 @@ export function UsersTab({ onUnauthorized }: { onUnauthorized: (reason: AuthFail
     setPending({ action, targetId, label });
   }, []);
 
-  /** 조치가 성공한 뒤(Task 3의 조치 창이 부른다): 계정 삭제면 상세를 닫고 목록을 다시 찾고, 아니면 상세·이력을 다시 부른다(정지·정지 풀기는 목록도). */
+  /** 조치가 성공한 뒤(조치 창이 닫힐 때 부른다): 계정 삭제면 상세를 닫고 목록을 다시 찾고, 아니면 상세·이력을 다시 부른다(정지·정지 풀기는 목록도). */
   const onActionDone = useCallback((action: ActionName) => {
     setPending(null);
     if (action === "delete-account") {
@@ -112,29 +113,16 @@ export function UsersTab({ onUnauthorized }: { onUnauthorized: (reason: AuthFail
         />
       )}
 
-      {/* Task 3에서 ActionDialog(pending, onDone=onActionDone, onClose)로 바꾼다. */}
-      {pending && <ActionPlaceholder pending={pending} onDone={onActionDone} onClose={() => setPending(null)} />}
+      {pending && (
+        <ActionDialog
+          key={`${pending.action}-${pending.targetId}`}
+          action={pending.action}
+          targetId={pending.targetId}
+          label={pending.label}
+          onDone={onActionDone}
+          onClose={() => setPending(null)}
+        />
+      )}
     </div>
-  );
-}
-
-function ActionPlaceholder({
-  pending,
-  onClose,
-}: {
-  pending: PendingAction;
-  onDone: (action: ActionName) => void;
-  onClose: () => void;
-}) {
-  return (
-    <p
-      role="status"
-      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-sm"
-    >
-      <span>{pending.label} — 조치 창은 아직 연결 전이에요.</span>
-      <button type="button" onClick={onClose} className="text-[var(--text-secondary)] underline">
-        닫기
-      </button>
-    </p>
   );
 }

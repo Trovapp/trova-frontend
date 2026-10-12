@@ -2,7 +2,7 @@
 
 import { getUsage, type DailyCount, type Days } from "@/lib/api/admin";
 import { formatNumber, shortDate } from "@/lib/format";
-import { errorMessage, useAdminQuery } from "@/lib/useAdminQuery";
+import { errorMessage, useAdminQuery, type AuthFailure } from "@/lib/useAdminQuery";
 import { DailyBars } from "../Charts";
 import { DataTable, ErrorState, LoadState, Panel, StatTile } from "../Panel";
 
@@ -20,7 +20,7 @@ function UsagePanel({ title, series }: { title: string; series: DailyCount[] }) 
   );
 }
 
-export function UsageTab({ days, onUnauthorized }: { days: Days; onUnauthorized: () => void }) {
+export function UsageTab({ days, onUnauthorized }: { days: Days; onUnauthorized: (reason: AuthFailure) => void }) {
   const state = useAdminQuery(() => getUsage(days), `usage-${days}`, onUnauthorized);
   if (state.status === "loading") return <LoadState message="사용 데이터를 불러오는 중…" />;
   if (state.status === "error") return <ErrorState message={errorMessage(state.error)} />;

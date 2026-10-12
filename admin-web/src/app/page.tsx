@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Days } from "@/lib/api/admin";
-import { clearToken, getToken } from "@/lib/session";
+import { clearToken, tokenState } from "@/lib/session";
+import type { AuthFailure } from "@/lib/useAdminQuery";
 import { SummaryCards } from "@/components/SummaryCards";
 import { AiTab } from "@/components/tabs/AiTab";
 import { PipelineTab } from "@/components/tabs/PipelineTab";
@@ -33,14 +34,15 @@ export default function DashboardPage() {
     },
     [router],
   );
-  const onUnauthorized = useCallback(() => toLogin("expired"), [toLogin]);
+  const onUnauthorized = useCallback((reason: AuthFailure) => toLogin(reason), [toLogin]);
 
   useEffect(() => {
-    if (getToken()) {
+    const state = tokenState();
+    if (state === "valid") {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- 토큰은 브라우저 저장소에만 있어 화면을 그린 뒤 확인한다.
       setReady(true);
     } else {
-      toLogin();
+      toLogin(state === "expired" ? "expired" : undefined);
     }
   }, [toLogin]);
 
@@ -65,14 +67,14 @@ export default function DashboardPage() {
 
       {/* 필터는 그래프 위 한 줄에: 탭과 기간. */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)]">
-        <nav role="tablist" aria-label="대시보드 탭" className="no-scrollbar -mb-px flex gap-1 overflow-x-auto">
+        <nav role="tablist" aria-label="대시보드 탭" className="-mb-px grid w-full grid-cols-2 gap-x-1 sm:flex sm:w-auto">
           {TABS.map((t) => (
             <button
               key={t.id}
               role="tab"
               aria-selected={tab === t.id}
               onClick={() => setTab(t.id)}
-              className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm ${
+              className={`whitespace-nowrap border-b-2 px-3 py-2 text-left text-sm sm:text-center ${
                 tab === t.id
                   ? "border-[var(--accent)] font-semibold text-[var(--text-primary)]"
                   : "border-transparent text-[var(--text-secondary)]"

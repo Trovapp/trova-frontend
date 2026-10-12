@@ -2,7 +2,7 @@
 
 import { getSummary, type SummaryCard } from "@/lib/api/admin";
 import { formatNumber } from "@/lib/format";
-import { errorMessage, useAdminQuery } from "@/lib/useAdminQuery";
+import { errorMessage, useAdminQuery, type AuthFailure } from "@/lib/useAdminQuery";
 import { ErrorState } from "./Panel";
 
 const TITLES: Record<SummaryCard["key"], { title: string; unit: string }> = {
@@ -13,7 +13,7 @@ const TITLES: Record<SummaryCard["key"], { title: string; unit: string }> = {
 };
 
 /** 맨 위 "지금 확인할 것" 카드 4개. 기준을 넘으면 빨간 테두리 + "확인 필요" 글자(색만으로 알리지 않는다). */
-export function SummaryCards({ onUnauthorized }: { onUnauthorized: () => void }) {
+export function SummaryCards({ onUnauthorized }: { onUnauthorized: (reason: AuthFailure) => void }) {
   const state = useAdminQuery(getSummary, "summary", onUnauthorized);
 
   if (state.status === "error") {
@@ -49,10 +49,18 @@ export function SummaryCards({ onUnauthorized }: { onUnauthorized: () => void })
                 {cards && card.value != null && <span className="ml-0.5 text-sm font-normal">{meta?.unit}</span>}
               </p>
               {cards && (
-                <p className="mt-1 text-[11px] leading-snug text-[var(--text-muted)]">
-                  기준 {formatNumber(card.threshold)}
-                  {meta?.unit} · {card.note}
-                </p>
+                <>
+                  <p className="mt-1 text-xs text-[var(--text-muted)]">
+                    기준 {formatNumber(card.threshold)}
+                    {meta?.unit}
+                  </p>
+                  {/* 설명이 길어 휴대폰에서는 4~5줄이 됐다(관리자 웹 QA) — 좁은 화면은 눌러서 본다. */}
+                  <p className="mt-1 hidden text-[11px] leading-snug text-[var(--text-muted)] sm:block">{card.note}</p>
+                  <details className="mt-1 text-[11px] leading-snug text-[var(--text-muted)] sm:hidden">
+                    <summary className="cursor-pointer">설명</summary>
+                    <p className="mt-1">{card.note}</p>
+                  </details>
+                </>
               )}
             </div>
           );

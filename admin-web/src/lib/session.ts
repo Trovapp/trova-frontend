@@ -21,6 +21,24 @@ export function parseStoredToken(raw: string | null, now: number): StoredToken |
   }
 }
 
+/** 저장된 토큰 상태 — 만료로 지워진 것과 처음부터 없는 것을 나눠 로그인 화면 안내를 다르게 한다. */
+export function storedTokenState(raw: string | null, now: number): "valid" | "expired" | "none" {
+  if (!raw) return "none";
+  return parseStoredToken(raw, now) ? "valid" : "expired";
+}
+
+/** 지금 탭의 토큰 상태(만료된 값은 지운다). */
+export function tokenState(): "valid" | "expired" | "none" {
+  if (current && current.expiresAt > Date.now()) return "valid";
+  const state = storedTokenState(readStorage(), Date.now());
+  if (state === "valid") {
+    getToken();
+  } else {
+    clearToken();
+  }
+  return state;
+}
+
 function readStorage(): string | null {
   try {
     return window.sessionStorage.getItem(STORAGE_KEY);

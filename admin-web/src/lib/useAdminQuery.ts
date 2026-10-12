@@ -6,11 +6,18 @@ import { ApiError } from "./api/admin";
 export type QueryState<T> =
   { status: "loading" } | { status: "error"; error: ApiError | Error } | { status: "ready"; data: T };
 
+/** 로그인 화면으로 돌려보낼 이유 — 401은 만료, 403은 관리자 목록에서 빠짐(로그인한 채 ADMIN_USERS에서 지워진 경우). */
+export type AuthFailure = "expired" | "forbidden";
+
 /**
  * 탭·카드마다 따로 불러온다 — 한 곳의 오류가 다른 곳에 번지지 않게(설계 "탭을 나눈 이유").
- * 401은 onUnauthorized로 넘겨 로그인 화면으로 보낸다.
+ * 401·403은 onUnauthorized로 넘겨 로그인 화면으로 보낸다(칸마다 "권한 없음"만 띄우지 않게).
  */
-export function useAdminQuery<T>(load: () => Promise<T>, key: string, onUnauthorized: () => void): QueryState<T> {
+export function useAdminQuery<T>(
+  load: () => Promise<T>,
+  key: string,
+  onUnauthorized: (reason: AuthFailure) => void,
+): QueryState<T> {
   const [state, setState] = useState<{ key: string; value: QueryState<T> }>({ key, value: { status: "loading" } });
 
   useEffect(() => {
@@ -21,8 +28,8 @@ export function useAdminQuery<T>(load: () => Promise<T>, key: string, onUnauthor
       })
       .catch((error: Error) => {
         if (cancelled) return;
-        if (error instanceof ApiError && error.status === 401) {
-          onUnauthorized();
+        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+          onUnauthorized(error.status === 401 ? "expired" : "forbidden");
           return;
         }
         setState({ key, value: { status: "error", error } });

@@ -2,11 +2,11 @@
 
 import { getServer, type Days } from "@/lib/api/admin";
 import { formatNumber, shortDateTime } from "@/lib/format";
-import { errorMessage, useAdminQuery } from "@/lib/useAdminQuery";
+import { errorMessage, useAdminQuery, type AuthFailure } from "@/lib/useAdminQuery";
 import { DailyBars, TimeLines } from "../Charts";
 import { DataTable, ErrorState, LoadState, Panel } from "../Panel";
 
-export function ServerTab({ days, onUnauthorized }: { days: Days; onUnauthorized: () => void }) {
+export function ServerTab({ days, onUnauthorized }: { days: Days; onUnauthorized: (reason: AuthFailure) => void }) {
   const state = useAdminQuery(() => getServer(days), `server-${days}`, onUnauthorized);
   if (state.status === "loading") return <LoadState message="서버 상태를 불러오는 중…" />;
   if (state.status === "error") return <ErrorState message={errorMessage(state.error)} />;

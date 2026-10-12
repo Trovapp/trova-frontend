@@ -12,17 +12,23 @@ const DANGER_ACTIONS: ReadonlySet<ActionName> = new Set(["delete-trip", "delete-
 const REASON_MAX = 300;
 const EXPIRED_MESSAGE = "확인 시간(5분)이 지났어요. 미리보기부터 다시 해 주세요.";
 
+/** 로그인 버튼이 보낼 로그인 화면 안내: 401은 세션 만료, 403 REAUTH_REQUIRED는 10분 재로그인. */
+type DialogError = ActionErrorView & { loginReason?: "expired" | "reauth" };
+
 type Phase =
   | { kind: "loading" }
-  | { kind: "previewFailed"; error: ActionErrorView }
+  | { kind: "previewFailed"; error: DialogError }
   | { kind: "ready"; preview: ActionPreview; deadline: number }
   | { kind: "done"; result: string };
 
-function toErrorView(e: unknown): ActionErrorView {
+function toErrorView(e: unknown): DialogError {
   if (e instanceof ApiError) {
-    // 401은 토큰이 이미 지워졌으므로 다시 로그인으로 안내한다.
-    if (e.status === 401) return { kind: "reauth", message: "로그인이 만료됐어요. 다시 로그인해 주세요." };
-    return describeActionError(e.status, e.code);
+    // 401은 토큰이 이미 지워졌으므로(세션 만료) 다시 로그인으로 안내한다.
+    if (e.status === 401) {
+      return { kind: "reauth", message: "로그인이 만료됐어요. 다시 로그인해 주세요.", loginReason: "expired" };
+    }
+    const view = describeActionError(e.status, e.code);
+    return view.kind === "reauth" ? { ...view, loginReason: "reauth" } : view;
   }
   return { kind: "other", message: "서버에 연결하지 못했어요. 잠시 뒤 다시 시도해 주세요." };
 }
@@ -53,12 +59,18 @@ export function ActionDialog({
   const confirmRef = useRef<HTMLInputElement>(null);
   // state 반영 전 같은 순간의 두 번째 누름도 막는다.
   const busyRef = useRef(false);
+  // 배경에서 누르기 시작했는지 — 입력칸에서 드래그하다 배경에서 놓아도 닫히지 않게.
+  const backdropPressRef = useRef(false);
+  // 창을 연 버튼. 아래 포커스 효과가 창으로 포커스를 옮기기 전에, 첫 렌더 중에 기억한다.
+  const [opener] = useState<HTMLElement | null>(() =>
+    typeof document === "undefined" ? null : (document.activeElement as HTMLElement | null),
+  );
 
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [reason, setReason] = useState("");
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
-  const [execError, setExecError] = useState<ActionErrorView | null>(null);
+  const [execError, setExecError] = useState<DialogError | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
   const requestPreview = useCallback(() => {
@@ -103,10 +115,7 @@ export function ActionDialog({
   }, [phase]);
 
   // 닫히면 창을 열었던 버튼으로 포커스를 돌려준다.
-  useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null;
-    return () => opener?.focus?.();
-  }, []);
+  useEffect(() => () => opener?.focus?.(), [opener]);
 
   const close = useCallback(() => {
     if (busyRef.current) return;
@@ -116,15 +125,22 @@ export function ActionDialog({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape") {
+        // 입력칸 안의 Esc는 무시한다(적던 사유를 잃지 않게).
+        const target = e.target as HTMLElement | null;
+        if (target?.closest("input, textarea")) return;
+        close();
+        return;
+      }
+      if (e.key === "Tab") trapFocus(e, panelRef.current);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [close]);
 
-  const goLogin = () => {
+  const goLogin = (reason: "expired" | "reauth") => {
     clearToken();
-    router.replace("/login/?error=reauth");
+    router.replace(`/login/?error=${reason}`);
   };
 
   const execute = async () => {
@@ -160,8 +176,13 @@ export function ActionDialog({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onMouseDown={(e) => {
+        backdropPressRef.current = e.target === e.currentTarget;
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) close();
+        const pressedHere = backdropPressRef.current;
+        backdropPressRef.current = false;
+        if (pressedHere && e.target === e.currentTarget) close();
       }}
     >
       <div
@@ -239,7 +260,10 @@ export function ActionDialog({
         )}
 
         <div className="flex flex-wrap justify-end gap-2">
-          {phase.kind === "ready" && (expired || execError?.kind === "retryPreview") && !busy && (
+          {phase.kind === "ready" &&
+            execError?.kind !== "reauth" &&
+            (expired || execError?.kind === "retryPreview") &&
+            !busy && (
             <button
               type="button"
               onClick={retryPreview}
@@ -276,7 +300,31 @@ export function ActionDialog({
   );
 }
 
-function ErrorBox({ error, onLogin }: { error: ActionErrorView; onLogin?: () => void }) {
+/** Tab·Shift+Tab이 창 밖으로 나가지 않고 창 안의 첫·마지막 요소 사이를 돈다. */
+function trapFocus(e: KeyboardEvent, panel: HTMLElement | null) {
+  if (!panel) return;
+  const focusables = Array.from(
+    panel.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled]), textarea:not([disabled])"),
+  );
+  if (focusables.length === 0) {
+    e.preventDefault();
+    panel.focus();
+    return;
+  }
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  const active = document.activeElement;
+  const inside = active instanceof HTMLElement && panel.contains(active);
+  if (e.shiftKey && (active === first || active === panel || !inside)) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && (active === last || !inside)) {
+    e.preventDefault();
+    first.focus();
+  }
+}
+
+function ErrorBox({ error, onLogin }: { error: DialogError; onLogin?: (reason: "expired" | "reauth") => void }) {
   return (
     <div
       role="alert"
@@ -286,7 +334,7 @@ function ErrorBox({ error, onLogin }: { error: ActionErrorView; onLogin?: () => 
       {error.kind === "reauth" && onLogin && (
         <button
           type="button"
-          onClick={onLogin}
+          onClick={() => onLogin(error.loginReason ?? "reauth")}
           className="self-start rounded-lg border border-[var(--critical)] px-3 py-1 font-medium"
         >
           다시 로그인

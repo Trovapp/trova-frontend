@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { getActionLogs, getUserDetail, type ActionName, type AdminUserDetail } from "@/lib/api/admin";
+import { actionLabel } from "@/lib/actionLabels";
 import { formatNumber, shortDateTime, tripPeriod } from "@/lib/format";
 import { errorMessage, useAdminQuery, type AuthFailure } from "@/lib/useAdminQuery";
 import { ErrorState, LoadState, StatTile } from "../Panel";
@@ -10,15 +11,6 @@ import { ErrorState, LoadState, StatTile } from "../Panel";
 export type OnAction = (action: ActionName, targetId: number, label: string) => void;
 
 export const PROVIDER_LABELS: Record<string, string> = { kakao: "카카오", google: "구글" };
-
-export const ACTION_LABELS: Record<string, string> = {
-  DELETE_TRIP: "여행 삭제",
-  DELETE_ACCOUNT: "계정 삭제",
-  RETRY_JOB: "작업 다시 실행",
-  HIDE_DRAFT: "초안 숨기기",
-  SUSPEND_USER: "정지",
-  UNSUSPEND_USER: "정지 풀기",
-};
 
 const JOB_STATUS: Record<string, string> = {
   PENDING: "대기",
@@ -280,7 +272,7 @@ function ActionHistory({
           empty="아직 조치한 적이 없어요."
           rows={logs.data.logs.map((l) => [
             shortDateTime(l.createdAt),
-            ACTION_LABELS[l.action] ?? l.action,
+            actionLabel(l.action),
             l.targetId == null ? "–" : `#${l.targetId}`,
             <span key="reason" className="inline-block min-w-32 max-w-xs break-all">
               {l.reason ?? "–"}

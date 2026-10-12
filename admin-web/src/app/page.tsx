@@ -6,6 +6,7 @@ import type { Days } from "@/lib/api/admin";
 import { clearToken, tokenState } from "@/lib/session";
 import type { AuthFailure } from "@/lib/useAdminQuery";
 import { SummaryCards } from "@/components/SummaryCards";
+import { ActionLogTab } from "@/components/tabs/ActionLogTab";
 import { AiTab } from "@/components/tabs/AiTab";
 import { PipelineTab } from "@/components/tabs/PipelineTab";
 import { ServerTab } from "@/components/tabs/ServerTab";
@@ -115,9 +116,7 @@ export default function DashboardPage() {
         {tab === "server" && <ServerTab days={days} onUnauthorized={onUnauthorized} />}
         {tab === "usage" && <UsageTab days={days} onUnauthorized={onUnauthorized} />}
         {tab === "users" && <UsersTab onUnauthorized={onUnauthorized} />}
-        {tab === "log" && (
-          <p className="py-8 text-center text-sm text-[var(--text-muted)]">조치 기록은 준비 중이에요.</p>
-        )}
+        {tab === "log" && <ActionLogTab onUnauthorized={onUnauthorized} />}
       </div>
     </main>
   );

@@ -6,7 +6,7 @@
     "dev": "next dev -p 3001",
     "build": "next build && node scripts/csp-headers.mjs",
     "lint": "eslint",
-    "test": "node --test scripts/csp.test.mjs src/lib/session.test.ts src/lib/actionError.test.ts"
+    "test": "node --test scripts/csp.test.mjs src/lib/session.test.ts src/lib/actionError.test.ts src/lib/format.test.ts"
   },
   "dependencies": {
     "next": "16.3.1",

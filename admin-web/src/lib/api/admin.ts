@@ -158,7 +158,7 @@ export type AdminUserDetail = {
   admin: boolean;
   counts: { jobs: number; savedPlaces: number; trips: number; drafts: number };
   recentJobs: { id: number; status: string; failureReason: string | null; createdAt: string; retryable: boolean }[];
-  trips: { id: number; title: string; startDate: string; endDate: string }[];
+  trips: { id: number; title: string; startDate: string | null; endDate: string | null }[];
   autoDrafts: { id: number; status: string; dismissed: boolean; createdAt: string }[];
 };
 export type ActionName =

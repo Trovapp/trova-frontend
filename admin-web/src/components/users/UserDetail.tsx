@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { getActionLogs, getUserDetail, type ActionName, type AdminUserDetail } from "@/lib/api/admin";
-import { formatNumber, shortDate, shortDateTime } from "@/lib/format";
+import { formatNumber, shortDateTime, tripPeriod } from "@/lib/format";
 import { errorMessage, useAdminQuery, type AuthFailure } from "@/lib/useAdminQuery";
 import { ErrorState, LoadState, StatTile } from "../Panel";
 
@@ -208,7 +208,7 @@ function DetailBody({ user, onAction }: { user: AdminUserDetail; onAction: OnAct
             <span key="title" className="break-all">
               {t.title}
             </span>,
-            `${shortDate(t.startDate)}~${shortDate(t.endDate)}`,
+            tripPeriod(t.startDate, t.endDate),
             <ActionButton key="delete" danger onClick={() => onAction("delete-trip", t.id, `여행 "${t.title}" 삭제`)}>
               삭제
             </ActionButton>,

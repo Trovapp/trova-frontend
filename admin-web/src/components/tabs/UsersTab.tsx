@@ -32,14 +32,18 @@ export function UsersTab({ onUnauthorized }: { onUnauthorized: (reason: AuthFail
     setPending({ action, targetId, label });
   }, []);
 
-  /** 조치가 성공한 뒤(Task 3의 조치 창이 부른다): 계정 삭제면 상세를 닫고 목록을 다시 찾고, 아니면 상세·이력을 다시 부른다. */
+  /** 조치가 성공한 뒤(Task 3의 조치 창이 부른다): 계정 삭제면 상세를 닫고 목록을 다시 찾고, 아니면 상세·이력을 다시 부른다(정지·정지 풀기는 목록도). */
   const onActionDone = useCallback((action: ActionName) => {
     setPending(null);
     if (action === "delete-account") {
       setSelectedId(null);
       setSearch((s) => ({ ...s, seq: s.seq + 1 }));
-    } else {
-      setDetailVersion((v) => v + 1);
+      return;
+    }
+    setDetailVersion((v) => v + 1);
+    // 정지·정지 풀기는 목록의 "정지됨" 배지도 바뀌므로 목록도 다시 부른다(넓은 화면은 목록이 같이 보인다).
+    if (action === "suspend-user" || action === "unsuspend-user") {
+      setSearch((s) => ({ ...s, seq: s.seq + 1 }));
     }
   }, []);
 

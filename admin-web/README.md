@@ -31,6 +31,10 @@ npm run lint && npm test && npm run build
 
 `npm test`는 의존성 없이 Node 내장 `node --test`로 CSP 생성(`scripts/csp.test.mjs`)과 토큰 만료 판단(`src/lib/session.test.ts`, Node 23.6+ 타입 제거 실행)을 검사한다.
 
+## 사용자·조치 기록 화면(2단계)
+
+"사용자" 탭에서 닉네임·번호로 사용자를 찾아 상세를 보고, 여행 삭제·계정 삭제·분석 다시 실행·초안 숨기기·정지/정지 풀기를 미리보기 → 사유·확인 글자 → 실행 순서로 한다(로그인한 지 10분이 지나면 다시 로그인). "조치 기록" 탭은 최근 50개 기록을 보여 주며, 기본은 "조치만 보기"(끄면 열람·검색·로그인 기록까지)다.
+
 ## 빌드와 보안 헤더
 
 `npm run build` = `next build` + `scripts/csp-headers.mjs`. 뒤 스크립트가 `out/` HTML의 인라인 스크립트 해시를 계산해

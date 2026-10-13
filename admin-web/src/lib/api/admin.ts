@@ -65,6 +65,7 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    public readonly code?: string,
   ) {
     super(message);
   }
@@ -105,8 +106,101 @@ async function adminGet<T>(path: string): Promise<T> {
   return res.json();
 }
 
+async function adminPost<T>(path: string, body: unknown): Promise<T> {
+  const token = getToken();
+  if (!token) {
+    throw new ApiError(401, "로그인이 필요합니다");
+  }
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    credentials: "omit",
+  });
+  if (res.status === 401) {
+    clearToken();
+  }
+  if (!res.ok) {
+    let code: string | undefined;
+    try {
+      const data = await res.json();
+      if (typeof data?.error === "string") code = data.error;
+    } catch {
+      // 본문이 JSON이 아니면 code 없이 상태 코드만 전달한다.
+    }
+    throw new ApiError(res.status, `POST ${path} failed: ${res.status}`, code);
+  }
+  return res.json();
+}
+
 export const getSummary = () => adminGet<DashboardSummary>("/api/admin/dashboard/summary");
 export const getUsage = (days: Days) => adminGet<UsageDashboard>(`/api/admin/dashboard/usage?days=${days}`);
 export const getPipeline = (days: Days) => adminGet<PipelineDashboard>(`/api/admin/dashboard/pipeline?days=${days}`);
 export const getAi = (days: Days) => adminGet<AiDashboard>(`/api/admin/dashboard/ai?days=${days}`);
 export const getServer = (days: Days) => adminGet<ServerDashboard>(`/api/admin/dashboard/server?days=${days}`);
+
+export type AdminUserRow = {
+  id: number;
+  provider: string;
+  nickname: string;
+  createdAt: string;
+  suspended: boolean;
+  jobs: number;
+  trips: number;
+};
+export type AdminUserDetail = {
+  id: number;
+  provider: string;
+  nickname: string;
+  createdAt: string;
+  lastActiveAt: string;
+  suspendedAt: string | null;
+  admin: boolean;
+  counts: { jobs: number; savedPlaces: number; trips: number; drafts: number };
+  recentJobs: { id: number; status: string; failureReason: string | null; createdAt: string; retryable: boolean }[];
+  trips: { id: number; title: string; startDate: string | null; endDate: string | null }[];
+  autoDrafts: { id: number; status: string; dismissed: boolean; createdAt: string }[];
+};
+export type ActionName =
+  | "delete-trip"
+  | "delete-account"
+  | "retry-job"
+  | "hide-draft"
+  | "suspend-user"
+  | "unsuspend-user";
+export type ActionPreview = {
+  action: string;
+  targetId: number;
+  targetUserId: number;
+  impact: string;
+  confirmText: string | null;
+  confirmToken: string;
+  expiresInSeconds: number;
+};
+export type ActionLog = {
+  id: number;
+  createdAt: string;
+  actorUserId: number | null;
+  action: string;
+  targetId: number | null;
+  targetUserId: number | null;
+  reason: string | null;
+  result: string | null;
+};
+
+export const searchUsers = (q: string) =>
+  adminGet<{ users: AdminUserRow[] }>(`/api/admin/users?q=${encodeURIComponent(q)}`);
+export const getUserDetail = (id: number) => adminGet<AdminUserDetail>(`/api/admin/users/${id}`);
+export function getActionLogs(opts?: { targetUserId?: number; kind?: "actions" | "all" }) {
+  const params = new URLSearchParams();
+  if (opts?.targetUserId) params.set("targetUserId", String(opts.targetUserId));
+  if (opts?.kind) params.set("kind", opts.kind);
+  const qs = params.toString();
+  return adminGet<{ logs: ActionLog[] }>(`/api/admin/actions${qs ? `?${qs}` : ""}`);
+}
+export const previewAction = (action: ActionName, targetId: number) =>
+  adminPost<ActionPreview>(`/api/admin/actions/${action}/preview`, { targetId });
+export const executeAction = (
+  action: ActionName,
+  body: { confirmToken: string; reason: string; confirmText: string },
+) => adminPost<{ action: string; targetId: number; result: string }>(`/api/admin/actions/${action}/execute`, body);

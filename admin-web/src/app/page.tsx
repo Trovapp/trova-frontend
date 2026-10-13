@@ -6,18 +6,25 @@ import type { Days } from "@/lib/api/admin";
 import { clearToken, tokenState } from "@/lib/session";
 import type { AuthFailure } from "@/lib/useAdminQuery";
 import { SummaryCards } from "@/components/SummaryCards";
+import { ActionLogTab } from "@/components/tabs/ActionLogTab";
 import { AiTab } from "@/components/tabs/AiTab";
 import { PipelineTab } from "@/components/tabs/PipelineTab";
 import { ServerTab } from "@/components/tabs/ServerTab";
 import { UsageTab } from "@/components/tabs/UsageTab";
+import { UsersTab } from "@/components/tabs/UsersTab";
 
 const TABS = [
   { id: "ai", label: "AI 한도·호출" },
   { id: "pipeline", label: "분석 파이프라인" },
   { id: "server", label: "서버 상태" },
   { id: "usage", label: "사용 데이터" },
+  { id: "users", label: "사용자" },
+  { id: "log", label: "조치 기록" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
+
+/** 기간(7·14·30일) 버튼은 대시보드 탭에서만 보인다 — 사용자·조치 기록 탭은 기간과 상관없다. */
+const PERIOD_TABS: readonly TabId[] = ["ai", "pipeline", "server", "usage"];
 
 const PERIODS: Days[] = [7, 14, 30];
 
@@ -84,21 +91,23 @@ export default function DashboardPage() {
             </button>
           ))}
         </nav>
-        <div role="group" aria-label="기간" className="mb-2 flex rounded-lg border border-[var(--border)] p-0.5">
-          {PERIODS.map((p) => (
-            <button
-              key={p}
-              type="button"
-              aria-pressed={days === p}
-              onClick={() => setDays(p)}
-              className={`rounded-md px-3 py-1 text-sm tabular-nums ${
-                days === p ? "bg-[var(--accent)] text-white" : "text-[var(--text-secondary)]"
-              }`}
-            >
-              {p}일
-            </button>
-          ))}
-        </div>
+        {PERIOD_TABS.includes(tab) && (
+          <div role="group" aria-label="기간" className="mb-2 flex rounded-lg border border-[var(--border)] p-0.5">
+            {PERIODS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                aria-pressed={days === p}
+                onClick={() => setDays(p)}
+                className={`rounded-md px-3 py-1 text-sm tabular-nums ${
+                  days === p ? "bg-[var(--accent)] text-white" : "text-[var(--text-secondary)]"
+                }`}
+              >
+                {p}일
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div role="tabpanel">
@@ -106,6 +115,8 @@ export default function DashboardPage() {
         {tab === "pipeline" && <PipelineTab days={days} onUnauthorized={onUnauthorized} />}
         {tab === "server" && <ServerTab days={days} onUnauthorized={onUnauthorized} />}
         {tab === "usage" && <UsageTab days={days} onUnauthorized={onUnauthorized} />}
+        {tab === "users" && <UsersTab onUnauthorized={onUnauthorized} />}
+        {tab === "log" && <ActionLogTab onUnauthorized={onUnauthorized} />}
       </div>
     </main>
   );
